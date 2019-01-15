@@ -1,0 +1,9 @@
+#ifndef ATTINYTOY_SRC_CONFIG_H_
+#define ATTINYTOY_SRC_CONFIG_H_
+
+/* Copyright 2019 Georg Voigtlaender gvoigtlaender@googlemail.com */
+#define WITH_FASTLED  1
+#define WITH_BLINK 0
+#define WITH_TRAFFICLIGHT_2 1
+
+#endif  // ATTINYTOY_SRC_CONFIG_H_
