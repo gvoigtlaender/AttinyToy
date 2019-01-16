@@ -1,11 +1,22 @@
 /* Copyright 2019 Georg Voigtlaender gvoigtlaender@googlemail.com */
-#include <Arduino.h>
-
 #include "./config.h"
-
 #if WITH_FASTLED == 1
 #include <FastLED.h>
 #endif
+#include <Arduino.h>
+
+extern "C" {
+  /*
+  __extension__ typedef int __guard __attribute__((mode (__DI__)));
+  int __cxa_guard_acquire(__guard g) {
+    return !(char )(g);
+  }
+  void __cxa_guard_release(__guard *g) {
+    (char *)g = 1;
+  }
+  */
+  volatile unsigned long timer0_millis = 0;
+};
 
 // fixed for pcb
 #define LATCH_OUT     PB3
@@ -27,20 +38,20 @@ public:
   virtual void setup() {
     /* code */
     m_ulMillis = millis();
-    digitalWrite(LED_OUT, HIGH);
+    digitalWrite(LATCH_OUT, HIGH);
   }
   virtual bool control() {
     /* code */
 
-    if ( millis() > m_ulMillis + 10000 )
+    if ( millis() > m_ulMillis + 60000 )
       m_bDone = true;
-
+    delay(1);
     return m_bDone;
   }
 
   virtual void shutdown()
   {
-    digitalWrite(LED_OUT, LOW);
+    digitalWrite(LATCH_OUT, LOW);
   }
 
 protected:
@@ -90,7 +101,7 @@ protected:
 };
 //WITH_BLINK
 
-#else if WITH_TRAFFICLIGHT_2 == 1
+#elif WITH_TRAFFICLIGHT_2 == 1
 typedef struct
 {
   CRGB up;
@@ -98,12 +109,18 @@ typedef struct
   unsigned int delay;
 }strTL;
 
+#define NUM_LEDS 2
+#define LED_TYPE WS2812B
+#define BRIGHTNESS  8
+#define COLOR_ORDER GRB
+#define UPDATES_PER_SECOND 1
+
 strTL oTL[2] =
 {
-  { CRGB::Red,  CRGB::Black,  1000},
-  { CRGB::Black,  CRGB::Green,  1000},
+  { CRGB::Red,  CRGB::Black,  5000},
+  { CRGB::Black,  CRGB::Green,  5000},
 };
-CRGB leds[2];
+CRGB leds[NUM_LEDS];
 class CControlTL2 : public CControlBase
 {
 public:
@@ -116,8 +133,11 @@ public:
   virtual void setup()
   {
     CControlBase::setup();
-    m_ulNextSwitch = m_ulMillis-1;
-    FastLED.addLeds<WS2812B, LED_OUT, RGB>(leds, 2);
+    m_ulNextSwitch = m_ulMillis;
+    delay(200);
+    FastLED.addLeds<LED_TYPE, LED_OUT,
+         COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.setBrightness(BRIGHTNESS);
   }
 
   virtual bool control()
@@ -127,12 +147,22 @@ public:
         leds[0] = oTL[m_nState].up;
         leds[1] = oTL[m_nState].down;
         FastLED.show();
+        // FastLED.delay(1000 / UPDATES_PER_SECOND);
         m_ulNextSwitch += oTL[m_nState].delay;
-        m_nState = (m_nState+1 % 2);
+        m_nState = (m_nState==0)?1:0;
     }
 
     return CControlBase::control();
   }
+
+  virtual void shutdown()
+  {
+    for ( unsigned int n=0; n<NUM_LEDS; n++ )
+     leds[n] = CRGB::Black;
+    FastLED.show();
+    FastLED.clear(true);
+  }
+
 
 protected:
   int m_nState;
@@ -148,10 +178,11 @@ void setup() {
 
   pinMode(LATCH_OUT, OUTPUT);
   digitalWrite(LATCH_OUT, HIGH);
-  pinMode(LED_OUT, OUTPUT);
+  //pinMode(LED_OUT, OUTPUT);
   delay(100);  // power-up safety delay
 
   pObj = new CControlTL2();
+  pObj->setup();
 
 }
 
