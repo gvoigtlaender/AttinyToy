@@ -71,13 +71,13 @@ public:
     ;
   }
 
-  virtual void setup()
+  virtual void setup() override
   {
     CControlBase::setup();
     m_ulNextSwitch = m_ulMillis-1;
   }
 
-  virtual bool control()
+  virtual bool control() override
   {
     if (millis() > m_ulNextSwitch )
     {
@@ -89,7 +89,7 @@ public:
     return CControlBase::control();
   }
 
-  virtual void shutdown()
+  virtual void shutdown() override
   {
     CControlBase::shutdown();
   }
@@ -130,7 +130,7 @@ public:
 
   }
 
-  virtual void setup()
+  virtual void setup() override
   {
     CControlBase::setup();
     m_ulNextSwitch = m_ulMillis;
@@ -140,7 +140,7 @@ public:
     FastLED.setBrightness(BRIGHTNESS);
   }
 
-  virtual bool control()
+  virtual bool control() override
   {
     if ( millis() > m_ulNextSwitch )
     {
@@ -155,7 +155,7 @@ public:
     return CControlBase::control();
   }
 
-  virtual void shutdown()
+  virtual void shutdown() override
   {
     for ( unsigned int n=0; n<NUM_LEDS; n++ )
      leds[n] = CRGB::Black;
