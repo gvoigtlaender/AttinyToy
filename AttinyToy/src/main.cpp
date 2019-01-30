@@ -168,7 +168,79 @@ protected:
   int m_nState;
   unsigned long m_ulNextSwitch;
 };
-#endif //WITH_TRAFFICLIGHT_2
+#elif WITH_TRAFFICLIGHT_3 == 1
+typedef struct
+{
+  CRGB up;
+  CRGB middle;
+  CRGB down;
+  unsigned int delay;
+}strTL;
+
+#define NUM_LEDS 3
+#define LED_TYPE WS2812B
+#define BRIGHTNESS  8
+#define COLOR_ORDER GRB
+#define UPDATES_PER_SECOND 1
+#define NUM_STATES  4
+
+strTL oTL[NUM_STATES] =
+{
+  { CRGB::Red,  CRGB::Black,  CRGB::Black,  500},
+  { CRGB::Red,  CRGB::Yellow,  CRGB::Black,  500},
+  { CRGB::Black,  CRGB::Black,  CRGB::Green,  500},
+  { CRGB::Black,  CRGB::Yellow,  CRGB::Black,  500},
+};
+CRGB leds[NUM_LEDS];
+class CControlTL3 : public CControlBase
+{
+public:
+  CControlTL3() : CControlBase()
+  ,m_nState(0)
+  {
+
+  }
+
+  virtual void setup() override
+  {
+    CControlBase::setup();
+    m_ulNextSwitch = m_ulMillis;
+    delay(200);
+    FastLED.addLeds<LED_TYPE, LED_OUT,
+         COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.setBrightness(BRIGHTNESS);
+  }
+
+  virtual bool control() override
+  {
+    if ( millis() > m_ulNextSwitch )
+    {
+        leds[0] = oTL[m_nState].up;
+        leds[1] = oTL[m_nState].middle;
+        leds[2] = oTL[m_nState].down;
+        FastLED.show();
+        // FastLED.delay(1000 / UPDATES_PER_SECOND);
+        m_ulNextSwitch += oTL[m_nState].delay;
+        m_nState = (++m_nState % NUM_STATES);
+    }
+
+    return CControlBase::control();
+  }
+
+  virtual void shutdown() override
+  {
+    for ( unsigned int n=0; n<NUM_LEDS; n++ )
+     leds[n] = CRGB::Black;
+    FastLED.show();
+    FastLED.clear(true);
+  }
+
+
+protected:
+  int m_nState;
+  unsigned long m_ulNextSwitch;
+};
+#endif //WITH_TRAFFICLIGHT_3
 
 
 // Main Control Code
@@ -181,7 +253,7 @@ void setup() {
   //pinMode(LED_OUT, OUTPUT);
   delay(100);  // power-up safety delay
 
-  pObj = new CControlTL2();
+  pObj = new CControlTL3();
   pObj->setup();
 
 }
